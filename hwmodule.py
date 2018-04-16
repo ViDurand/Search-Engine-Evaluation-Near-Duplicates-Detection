@@ -31,7 +31,7 @@ def P_at_k(GT, Q_results, k):
 def mean_P_at_k(groud_truth_dict, se_results_dict, k):
     patk_list = [] #List of all P@k for all the queries  
     
-    for i in se_results_dict.keys(): #for each iteration, i will contain the query_id from the ground truth list which is the same as the ones from the query results list
+    for i in groud_truth_dict.keys(): #for each iteration, i will contain the query_id from the ground truth list which is the same as the ones from the query results list
         GT_qi= groud_truth_dict[i] #Ground truth list for the current query
         Qi_results = se_results_dict[i] #Results list for the current query
         
@@ -108,7 +108,7 @@ def ndcg(groud_truth_list, se_results_list, k):
 def mean_ndcg_at_k(groud_truth_dict, se_results_dict, k):
     ndcg_list = [] #List of all ndcg@k for all the queries  
     
-    for i in se_results_dict.keys(): #for each iteration, i will contain the query_id from the ground truth list which is the same as the ones from the query results list
+    for i in groud_truth_dict.keys(): #for each iteration, i will contain the query_id from the ground truth list which is the same as the ones from the query results list
         GT_qi= groud_truth_dict[i] #Ground truth list for the current query
         Qi_results = se_results_dict[i] #Results list for the current query
         
@@ -119,3 +119,34 @@ def mean_ndcg_at_k(groud_truth_dict, se_results_dict, k):
     return np.mean(ndcg_list)
 
 #%%
+#functions for part_1_2
+
+#this function returns the recall of a query result giving it's ground truth
+def Recall(GT, Q_results):
+     recall = len([i for i in Q_results if i in GT])/len(GT)
+     return recall
+
+#this function computes the harmonic mean putting together Precision and Recall. BETA = 1
+def F_measure(GT, Q_results, k = 4, beta = 1):
+    P = P_at_k(GT, Q_results, k)
+    R = Recall(GT, Q_results)
+    numerator = (((beta**2) + 1) * P * R)
+    denominator = (((beta**2) * P) + R)
+    if denominator == 0:
+        return 0
+    else:
+        F = numerator/denominator
+    return F
+
+#this function returns the mean P@k of a list of query results giving their ground truth and k    
+def mean_F_measure(groud_truth_dict, se_results_dict):
+    f_measure_list = [] #List of all f_measures for all the queries  
+    
+    for i in groud_truth_dict.keys(): #for each iteration, i will contain the query_id from the ground truth list which is the same as the ones from the query results list
+        GT_qi = groud_truth_dict[i] #Ground truth list for the current query
+        Qi_results = se_results_dict[i][:4] #Results list for the current query
+        
+        f_measure_i = F_measure(GT_qi, Qi_results)
+        f_measure_list.append(f_measure_i)
+    
+    return np.mean(f_measure_list)
