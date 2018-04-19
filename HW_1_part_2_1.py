@@ -1,120 +1,34 @@
-from bs4 import BeautifulSoup
+#%%
+import numpy as np
+import pandas as pd
+import hwmodule as hwm
+import ast
 import sys
-import string
-import os.path
-import os
-import re
-import random
-import time
-from tqdm import tqdm
-import binascii
-import math
 
+#%%
+print("***Part2_2a: “Set-Size-Estimation problem”***")
 
-stringTable = str.maketrans({key: None for key in string.punctuation}) #string processing 
-
-path = '../dataset/part_2_1/lyrics_collection/'
-
-
-lyrics = [] #lyrics collection
-lyricsText = {} #lyrics Content
-
-print("Step 1 Loading the files")
-print ("Please Be Patient, it will take 15 mins")
-
-rawLyrics = ''
-
-for file in tqdm(os.listdir(path)):
-    if file.endswith(".html"):
-        filename = os.path.join(path, file)
-        f = open(filename, 'r',  encoding='utf8')
-        rawLyrics = rawLyrics + f.read() #save all lyrics in one variable
-
-#find the bodies of each song 
-soup = BeautifulSoup(rawLyrics, "html.parser")
-bodies = soup.findAll('body')
-i = 0 #index for the songIDs
-for body in tqdm(bodies):
-    lyricsText[i] = body
-    lyrics.append(
-        re.sub(' +', ' ', str(body).replace("<body>", "").replace("</body>", "").translate(stringTable)
-               .replace("", "").replace("\n", " ").lower()))
-    i = i + 1
-
-print ('Size of lyrics dataset: ' + str(len(lyrics)))
-
-
-i = 0
-data = {} #data will contain as key the songID and as value the lyrics words
-
-t = {}
-
-#assign converted lyrics to each song ids
-for lyric in tqdm(lyrics):
-    data[i] = lyric
-    # split in to words and save words instaed of full text
-    data[i] = re.sub("[^\w]", " ", data[i]).split()
-
-    # remove rows with empty values from dictionary d
-    if data[i]:
-        i = i + 1
-    else:
-        del data[i]
-        del body[i]
-        
-
-'''
-SHRINGLING PROCESS DOWN BELOW
-Shringling the lyrics the set of shingles will be a set of natural numbers.
-Before shingling a document, the punctuations have been removed and all words are in lower-case. 
-The length of each shingle will be 3.
-We will shingle only the lyric of the song.
-
-'''
-
-shringledData = {}
-
-lyricTitles = []
-
-totalShingles = 0
-shingleIndex = 0
-shingle_size = 3
-
-t0 = time.time()
-# loop through all the lyrics
-for i in tqdm(range(0, len(data))):
-
-    convertedLyric = data[i]
-    docID = i
-
-    # Maintain a list of all document IDs.
-    lyricTitles.append(docID)
-
-    # save the various shingles of one song
-    shingledLyric = set()
-    shingledLyricHashed = set() # save hashed values of the shingles hashed shingles
-
-    shingle = [] #shingles 
+if __name__ == "__main__":
+    #min_hash_sketches_path = '../dataset/part_2_2/HW_1_part_2_2_dataset__min_hash_sketches.tsv'
+    min_hash_sketches_path = sys.argv[1]
     
-    for index in range(len(convertedLyric) - shingle_size + 1):
-
-        shingle = convertedLyric[index:index + shingle_size]
-        shingle = ' '.join(shingle)
-
-        # Hash the shingle 
-        hashShingle = binascii.crc32(shingle.encode('utf8') )
-
-        if shingle not in shingledLyric:
-            shingledLyric.add(shingle)
-
-        if hashShingle not in shingledLyricHashed:
-            shingledLyricHashed.add(hashShingle)
-            shingleIndex = shingleIndex + 1
-        else:
-            del shingle
-            index = index - 1
-
-    # Store the completed list of shingles for this document in the dictionary.
-    shringledData[docID] = shingledLyricHashed
-
-totalShingles = shingleIndex
+    #reading all the sketches lists and storing them into a dictionary
+    df = pd.read_csv(min_hash_sketches_path, sep='\t', header=0)
+    keys = list(df['Min_Hash_Sketch_INTEGER_Id'])
+    values = list(df['Min_Hash_Sketch'])
+    values = [ast.literal_eval(e) for e in values]
+    min_hash_sketches = dict(zip(keys, values))
+    
+    #compute all the estimated sizes ad saving them into a dictionary
+    universe_size = 1123581321
+    estimated_set_size_dict = dict()
+    for sketchID in min_hash_sketches.keys():
+        estimated_set_size_dict[sketchID] = hwm.set_Size_Estimator(min_hash_sketches[sketchID], universe_size)
+    
+    
+    #saving the estimated sizes into a csv file
+    estimated_sizes_df = pd.DataFrame(list(estimated_set_size_dict.items()), columns=['Min_Hash_Sketch_INTEGER_Id', 'ESTIMATED_ORIGINAL_SET_SIZE'])
+    estimated_sizes_df.to_csv('../output/OUTPUT_HW_1_part_2_2_a.csv', header=False, index=False)
+#%%
+print("***Work compleated, check the output directory for output file***")
+#%%

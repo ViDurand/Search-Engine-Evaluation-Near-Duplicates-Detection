@@ -150,3 +150,26 @@ def mean_F_measure(groud_truth_dict, se_results_dict):
         f_measure_list.append(f_measure_i)
     
     return np.mean(f_measure_list)
+
+#%%
+#functions for part_2_2
+
+#this function estimate the original set size using the estimator presented in the report
+def set_Size_Estimator(sketches_list, universe_size):
+    k = len(sketches_list)  
+    sketches_list_starts_with_1_normalized = [(ai+1)/universe_size for ai in sketches_list] #we want the ranking to start with 1 to universe_size instead of 0 to universe_size-1
+    summation = sum(sketches_list_starts_with_1_normalized)
+    
+    return (k/summation)-1
+
+#this function compute the sketches_list of the union
+def sketch_of_union(union_set, sketches_dict):
+    sketch_of_union_l = sketches_dict[union_set[0]]
+    for sketchID in union_set[1:]:
+        actual_sketch = sketches_dict[sketchID]
+        for i in range(len(actual_sketch)):
+                sketch_of_union_l[i] = min(actual_sketch[i], sketch_of_union_l[i])
+    
+    return sketch_of_union_l
+
+#%%
