@@ -28,7 +28,7 @@ if __name__ == "__main__":
     
     #saving the estimated sizes into a csv file
     estimated_sizes_df = pd.DataFrame(list(estimated_set_size_dict.items()), columns=['Min_Hash_Sketch_INTEGER_Id', 'ESTIMATED_ORIGINAL_SET_SIZE'])
-    estimated_sizes_df.to_csv('../output/OUTPUT_HW_1_part_2_2_a.csv', header=False, index=False)
+    estimated_sizes_df.to_csv('../output/OUTPUT_HW_1_part_2_2_a.csv', header=True, index=False)
 #%%
 print("***Work compleated, check the output directory for output file***")
 #%%

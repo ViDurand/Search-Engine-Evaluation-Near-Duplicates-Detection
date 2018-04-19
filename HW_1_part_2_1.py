@@ -1,34 +1,119 @@
-#%%
-import numpy as np
-import pandas as pd
-import hwmodule as hwm
-import ast
+from bs4 import BeautifulSoup
 import sys
+import string
+import os.path
+import os
+import re
+import random
+import time
+from tqdm import tqdm
+import binascii
+import math
+import csv
 
-#%%
-print("***Part2_2a: “Set-Size-Estimation problem”***")
+# script part 2.1
+# lyrics collection directory
+path = '../dataset/part_2_1/lyrics_collection__CONVERTED'
+shingle_size = 3
 
-if __name__ == "__main__":
-    #min_hash_sketches_path = '../dataset/part_2_2/HW_1_part_2_2_dataset__min_hash_sketches.tsv'
-    min_hash_sketches_path = sys.argv[1]
+
+set_id= []
+#lyrics full dataset
+#grabbing the file name which we will use as ID in our input file 
+for file in tqdm(os.listdir(path)):
+    if file.endswith(".html"):
+        set_id.append(file)
+
+shingledLyric = {} #store the lyric shingles here
+shingles_db = [] #store all the shingles in the documents here
+#in here we will read each file and convert the lyrics in sets of shingle        
+for i, file_name in tqdm(set_id):
+    try:
+        #open the files
+        filename= os.path.join(path, file_name)
+        f = open(filename, 'r')
+        soup = BeautifulSoup(f.read(), 'html.parser') #read the html
+
+        #grab and format the body of the lyrics file
+        body = re.sub('(<.*?>)|(\")|(\W)', ' ', str(soup.body)).lower()
+        #split the files in workds
+        words = body.strip().split()
+        #initialize our shingles variable
+        shingles = []
+        #create the shingles
+        for i in range(len(words) - shingle_size+1):
+            shingles.append(" ".join(words[i:i+shingle_size]))
+            
+        #save the shingles in the document's shingles variable
+        if len(shingles) > 0:
+            shingledLyric[file_name] =  shingles
+        #save the shingle in our total shingle set for the dataset
+            shingles_db.extend(shingles)
+    except:
+        print('Error file #', i, file_name)
+        
+
+#check the size of our shigle set for processing the hash functions
+print(len(shingles_db), len(set(shingles_db)))
+shingles_set = {}
+#create natural numbers for all the shingle we have with the hashing function crc 32
+for shingles in tqdm(set(shingles_db)):
+    shingles_set[shingle] = binascii.crc32(shingle.encode('utf8')) & 0xffffffff
     
-    #reading all the sketches lists and storing them into a dictionary
-    df = pd.read_csv(min_hash_sketches_path, sep='\t', header=0)
-    keys = list(df['Min_Hash_Sketch_INTEGER_Id'])
-    values = list(df['Min_Hash_Sketch'])
-    values = [ast.literal_eval(e) for e in values]
-    min_hash_sketches = dict(zip(keys, values))
+
+single_db = [] #empty it to save some RAM 
+        
+        
+################################################
+num_hash_functions = 300
+upper_bound_on_number_of_distinct_terms  = 6962837
+#upper_bound_on_number_of_distinct_terms =   138492
+#upper_bound_on_number_of_distinct_terms =  3746518
+
+################################################
+
+
+### primality checker
+def is_prime(number):
+	for j in range(2, int(math.sqrt(number)+1)):
+		if (number % j) == 0: 
+			return False
+	return True
+
+sketch_values=[]
+#generating the different hash values
+print( "a	b	p	n")
+for hash_function_id in tqdm(range(num_hash_functions)):
+    a = random.randint(1, upper_bound_on_number_of_distinct_terms-1)
+    b = random.randint(0, upper_bound_on_number_of_distinct_terms-1)
+    p = random.randint(upper_bound_on_number_of_distinct_terms, 10*upper_bound_on_number_of_distinct_terms)
+    while is_prime(p) == False:
+        p = random.randint(upper_bound_on_number_of_distinct_terms, 10*upper_bound_on_number_of_distinct_terms)
+    sketch_values.append([a,b,p,upper_bound_on_number_of_distinct_terms ]) 
+
+#saving our minhashed dict which we will use with the tools
+input_dict={}
+for k, v in tqdm(shingledLyric.items()):
+    minhash = []
+    for a, b, p, n in sketch_values:
+        h_values = [(a * shingles_set[shingle] + b % p) % n for shingle in v]
+        minhash.append(min(h_values))
+    input_dict[k] = minhash
     
-    #compute all the estimated sizes ad saving them into a dictionary
-    universe_size = 1123581321
-    estimated_set_size_dict = dict()
-    for sketchID in min_hash_sketches.keys():
-        estimated_set_size_dict[sketchID] = hwm.set_Size_Estimator(min_hash_sketches[sketchID], universe_size)
-    
-    
-    #saving the estimated sizes into a csv file
-    estimated_sizes_df = pd.DataFrame(list(estimated_set_size_dict.items()), columns=['Min_Hash_Sketch_INTEGER_Id', 'ESTIMATED_ORIGINAL_SET_SIZE'])
-    estimated_sizes_df.to_csv('../output/OUTPUT_HW_1_part_2_2_a.csv', header=False, index=False)
-#%%
-print("***Work compleated, check the output directory for output file***")
-#%%
+
+
+#saving the values in our input files
+with open('../output/lyrics_full_hashed.csv', 'w') as output_file:
+    for k, v in my_dict.items():
+        output_file.write(k + "," + str(v) + "\n")
+
+with open ('../output/300_hash_functions.csv', 'w') as output_file:
+    for a,b,p,n in sketch_values:
+        output_file.write(str(a) + "," + str(b) + "," + str(p) + "," + str(n) + "\n" )
+        
+
+#script to find near duplicate 
+java -Xmx1G tools.NearDuplicatesDetector lsh_plus_min_hashing 0.85 23 13 ./300_hash_functions.tsv ./lyrics_full_hashed.tsv ../output/part221_dmthw1_results_300Hash_lsh_085_23_13.csv
+
+#script to find near duplicate candidates
+java -Xmx1G tools.NearDuplicatesDetector lsh 23 13 ./300_hash_functions.tsv ./lyrics_full_hashed.tsv ../output/part221_dmthw1_results_300Hash_lsh_085_23_13_CANDIDATES.csv
