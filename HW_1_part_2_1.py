@@ -27,7 +27,7 @@ for file in tqdm(os.listdir(path)):
 shingledLyric = {} #store the lyric shingles here
 shingles_db = [] #store all the shingles in the documents here
 #in here we will read each file and convert the lyrics in sets of shingle        
-for i, file_name in tqdm(set_id):
+for file_name in tqdm(set_id):
     try:
         #open the files
         filename= os.path.join(path, file_name)
@@ -50,14 +50,14 @@ for i, file_name in tqdm(set_id):
         #save the shingle in our total shingle set for the dataset
             shingles_db.extend(shingles)
     except:
-        print('Error file #', i, file_name)
+        print('Error file #', file_name)
         
 
 #check the size of our shigle set for processing the hash functions
 print(len(shingles_db), len(set(shingles_db)))
 shingles_set = {}
 #create natural numbers for all the shingle we have with the hashing function crc 32
-for shingles in tqdm(set(shingles_db)):
+for shingle in tqdm(set(shingles_db)):
     shingles_set[shingle] = binascii.crc32(shingle.encode('utf8')) & 0xffffffff
     
 
@@ -104,16 +104,19 @@ for k, v in tqdm(shingledLyric.items()):
 
 #saving the values in our input files
 with open('../output/lyrics_full_hashed.csv', 'w') as output_file:
-    for k, v in my_dict.items():
+    for k, v in input_dict.items():
         output_file.write(k + "," + str(v) + "\n")
 
 with open ('../output/300_hash_functions.csv', 'w') as output_file:
     for a,b,p,n in sketch_values:
         output_file.write(str(a) + "," + str(b) + "," + str(p) + "," + str(n) + "\n" )
         
+'''
 
-#script to find near duplicate 
-java -Xmx1G tools.NearDuplicatesDetector lsh_plus_min_hashing 0.85 23 13 ./300_hash_functions.tsv ./lyrics_full_hashed.tsv ../output/part221_dmthw1_results_300Hash_lsh_085_23_13.csv
+#script to find near duplicate: should be run from comand prompt
+java -Xmx1G tools.NearDuplicatesDetector lsh_plus_min_hashing 0.85 23 13 ../output/300_hash_functions.csv ./lyrics_full_hashed.tsv ../output/part221_dmthw1_results_300Hash_lsh_085_23_13.csv
 
-#script to find near duplicate candidates
-java -Xmx1G tools.NearDuplicatesDetector lsh 23 13 ./300_hash_functions.tsv ./lyrics_full_hashed.tsv ../output/part221_dmthw1_results_300Hash_lsh_085_23_13_CANDIDATES.csv
+#script to find near duplicate candidates: should be run from comand prompt
+java -Xmx1G tools.NearDuplicatesDetector lsh 23 13 ./300_hash_functions.tsv ../output/lyrics_full_hashed.csv ../output/part221_dmthw1_results_300Hash_lsh_085_23_13_CANDIDATES.csv
+
+'''
