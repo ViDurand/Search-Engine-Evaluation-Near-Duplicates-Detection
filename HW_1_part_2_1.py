@@ -103,13 +103,13 @@ for k, v in tqdm(shingledLyric.items()):
 
 
 #saving the values in our input files
-with open('../output/lyrics_full_hashed.csv', 'w') as output_file:
+with open('../output/lyrics_full_hashed.tsv', 'w') as output_file:
     for k, v in input_dict.items():
-        output_file.write(k + "," + str(v) + "\n")
+        output_file.write(k + "\t" + str(v) + "\n")
 
-with open ('../output/300_hash_functions.csv', 'w') as output_file:
+with open ('../output/300_hash_functions.tsv', 'w') as output_file:
     for a,b,p,n in sketch_values:
-        output_file.write(str(a) + "," + str(b) + "," + str(p) + "," + str(n) + "\n" )
+        output_file.write(str(a) + "\t" + str(b) + "\t" + str(p) + "\t" + str(n) + "\n" )
         
 '''
 
